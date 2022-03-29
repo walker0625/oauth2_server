@@ -1,6 +1,10 @@
-package com.oauth2.users;
+package com.oauth2.service;
 
+import com.oauth2.domain.users.User;
+import com.oauth2.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,6 +20,8 @@ import java.util.Collection;
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final RedisTemplate redisTemplate;
+
     /* DB에 USER 값 있으면 비활성화
     private final PasswordEncoder passwordEncoder;
 
@@ -39,7 +45,13 @@ public class UserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username);
+        saveRedis(user);
         return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), getAuthorities());
+    }
+
+    private void saveRedis(User user) {
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        valueOperations.set("id", user.getId());
     }
 
     private Collection<? extends GrantedAuthority> getAuthorities() {
